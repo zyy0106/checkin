@@ -1,6 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "main": "node main.js"
+    "main": "node main.js",
+    "smart": "node smart-checkin.js"
   }
 }

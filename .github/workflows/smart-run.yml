@@ -1,0 +1,58 @@
+name: smart-checkin
+
+# ---------------------------------------------------------------------------
+# 智能签到：在网络高峰时段探测 IQI，选择 IQI 最低时刻签到以获取最高 Cable 加成
+#
+# 默认 UTC 11:00 = 北京时间 19:00（晚高峰，IQI 通常最低）
+# 探测窗口 2 小时，每 10 分钟探测一次 IQI，发现 IQI < 80 立即签到
+# 窗口结束时如果未触发即时签到，也会在最低 IQI 时刻执行签到（不丢签）
+# ---------------------------------------------------------------------------
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 11 * * *'
+
+concurrency:
+  group: glados-checkin
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  smart-checkin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install
+        run: npm ci || npm install
+
+      - name: Protocol Guard
+        run: node guard.js --soft
+        continue-on-error: true
+        env:
+          DOMAIN: ${{ secrets.DOMAIN }}
+
+      - name: Smart Checkin
+        run: npm run smart
+        env:
+          GLADOS: ${{ secrets.GLADOS }}
+          GLADOS_UA: ${{ secrets.GLADOS_UA }}
+          GLADOS2: ${{ secrets.GLADOS2 }}
+          GLADOS_UA2: ${{ secrets.GLADOS_UA2 }}
+          GLADOS2_UA: ${{ secrets.GLADOS2_UA }}
+          GLADOS3: ${{ secrets.GLADOS3 }}
+          GLADOS_UA3: ${{ secrets.GLADOS_UA3 }}
+          GLADOS3_UA: ${{ secrets.GLADOS3_UA }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          NOTIFY: ${{ secrets.NOTIFY }}
+          AUTO_EXCHANGE: ${{ secrets.AUTO_EXCHANGE }}
+          EXCHANGE_THRESHOLD: ${{ secrets.EXCHANGE_THRESHOLD }}
+          SMART_PROBE_WINDOW_MIN: '120'
+          SMART_PROBE_INTERVAL_MIN: '10'
+          SMART_IQI_THRESHOLD: '80'
+          SMART_PATIENCE_MIN: '15'
